@@ -499,18 +499,39 @@ function handleFilesSelected(files) {
     </div>
   `).join('');
 
-  // Simulate AI Processing
+  // Call Backend API to Process PDF/File
   const aiProcessing = document.getElementById('ai-processing');
   aiProcessing.classList.add('active');
   
-  setTimeout(() => {
+  const formData = new FormData();
+  formData.append('file', files[0]); // Send first file for now
+
+  fetch('http://localhost:3001/api/parse-knowledge', {
+    method: 'POST',
+    body: formData
+  })
+  .then(res => {
+    if(!res.ok) throw new Error('Network response was not ok');
+    return res.json();
+  })
+  .then(data => {
     aiProcessing.classList.remove('active');
     
-    // Auto-fill form fields to simulate AI extraction
-    document.getElementById('weekly-topics').value = "หัวข้อที่ 1: " + fileNames + "\nสรุปเนื้อหาเบื้องต้นจากเอกสาร...";
-    document.getElementById('weekly-assignments').value = "พบงาน/แบบฝึกหัดในเอกสาร...";
-    showToast('AI อ่านเอกสารและสรุปข้อมูลเบื้องต้นให้แล้ว!', 'success');
-  }, 3000); // 3 seconds simulation
+    // Auto-fill form fields with AI extracted data
+    if (data.topics) document.getElementById('weekly-topics').value = data.topics;
+    if (data.emphasis) document.getElementById('weekly-emphasis').value = data.emphasis;
+    if (data.assignments) document.getElementById('weekly-assignments').value = data.assignments;
+    
+    showToast('AI อ่านเอกสารและสรุปข้อมูลให้แล้ว! ✨', 'success');
+  })
+  .catch(err => {
+    console.error(err);
+    aiProcessing.classList.remove('active');
+    
+    // Fallback if backend is not running
+    document.getElementById('weekly-topics').value = "หัวข้อที่ 1: " + fileNames + "\n(เกิดข้อผิดพลาดในการดึงข้อมูลจาก AI หรือไม่ได้เปิด Backend)";
+    showToast('มีปัญหาในการเชื่อมต่อ AI ⚠️', 'warning');
+  });
 }
 
 // ==========================================
