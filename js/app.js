@@ -38,8 +38,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadData() {
   // Load Semester Data
   try {
-    const res = await fetch('data/semester.json');
-    if (!res.ok) throw new Error('Failed to load semester.json');
+    const res = await fetch('http://localhost:3001/api/semester');
+    if (!res.ok) throw new Error('Failed to load semester.json from API');
     AppState.semester = await res.json();
     
     // Map subjects for quick access
@@ -55,21 +55,29 @@ async function loadData() {
   // Apply initial theme
   applyTheme(AppState.theme);
 
-  // Load Tasks (merge from JSON and LocalStorage)
-  let localTasks = AppState.db.getTasks();
-  if (localTasks.length === 0) {
-    try {
-      const res = await fetch('data/tasks.json');
-      if (res.ok) {
-        const data = await res.json();
-        localTasks = data.tasks || [];
-        AppState.db.saveTasks(localTasks);
-      }
-    } catch (e) {
-      console.warn('Could not load initial tasks.json', e);
+  // Load Tasks from API (Source of Truth)
+  try {
+    const res = await fetch('http://localhost:3001/api/tasks');
+    if (res.ok) {
+      const data = await res.json();
+      AppState.tasks = data.tasks || [];
+      AppState.db.saveTasks(AppState.tasks); // Cache locally just in case
     }
+  } catch (e) {
+    console.warn('Could not load tasks from API', e);
+    AppState.tasks = AppState.db.getTasks(); // Fallback to local cache
   }
-  AppState.tasks = localTasks;
+
+  // Load Knowledge from API
+  try {
+    const res = await fetch('http://localhost:3001/api/knowledge');
+    if (res.ok) {
+      const knowledge = await res.json();
+      AppState.db.saveWeeklyKnowledge(knowledge); // Cache locally
+    }
+  } catch (e) {
+    console.warn('Could not load knowledge from API', e);
+  }
 }
 
 // ==========================================
@@ -839,6 +847,13 @@ function saveWeeklyKnowledge() {
   const allK = AppState.db.getWeeklyKnowledge();
   allK.push(k);
   AppState.db.saveWeeklyKnowledge(allK);
+  
+  // POST to API
+  fetch('http://localhost:3001/api/knowledge', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ subjectId, week, knowledge: k })
+  }).catch(e => console.error('Failed to sync knowledge', e));
 
   // If there's an assignment, prompt or auto-create a task (Simplified: just show toast)
   if (assignments.trim()) {

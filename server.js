@@ -25,6 +25,77 @@ app.use(express.json());
 // Initialize AI Provider
 const aiProvider = new GeminiProvider();
 
+// Phase 4: Data Endpoints
+app.get('/api/semester', async (req, res) => {
+  const semester = await dbManager.getFullSemesterData();
+  res.json(semester);
+});
+
+app.get('/api/tasks', async (req, res) => {
+  const tasks = await dbManager.getAllTasks();
+  res.json({ tasks });
+});
+
+app.post('/api/tasks', async (req, res) => {
+  const { subjectId, task } = req.body;
+  if (!subjectId || !task) return res.status(400).json({ error: 'Missing data' });
+  
+  let subjectTasks = await dbManager.getSubjectData(subjectId, 'tasks.json') || { tasks: [] };
+  subjectTasks.tasks.push(task);
+  await dbManager.saveSubjectData(subjectId, 'tasks.json', subjectTasks);
+  res.json({ success: true });
+});
+
+app.put('/api/tasks/:id', async (req, res) => {
+  const taskId = req.params.id;
+  const { status } = req.body;
+  let allTasks = await dbManager.getAllTasks();
+  let task = allTasks.find(t => t.id === taskId);
+  if (task) {
+    let subjectTasks = await dbManager.getSubjectData(task.subjectId, 'tasks.json');
+    let st = subjectTasks.tasks.find(t => t.id === taskId);
+    if (st) {
+      st.status = status;
+      await dbManager.saveSubjectData(task.subjectId, 'tasks.json', subjectTasks);
+    }
+    return res.json({ success: true });
+  }
+  res.status(404).json({ error: 'Task not found' });
+});
+
+app.get('/api/knowledge', async (req, res) => {
+  const knowledge = await dbManager.getAllKnowledge();
+  res.json(knowledge);
+});
+
+app.post('/api/knowledge', async (req, res) => {
+  const { subjectId, week, knowledge } = req.body;
+  if (!subjectId || !week || !knowledge) return res.status(400).json({ error: 'Missing data' });
+  
+  let kb = await dbManager.getSubjectData(subjectId, 'knowledge.json') || { subjectId, weeks: [] };
+  let weekData = kb.weeks.find(w => w.week === parseInt(week));
+  if (!weekData) {
+    weekData = { week: parseInt(week), documents: [] };
+    kb.weeks.push(weekData);
+  }
+  
+  // We treat manual knowledge entry as a "document" with a summary
+  weekData.documents.push({
+    id: knowledge.id || `manual-${Date.now()}`,
+    fileName: 'Manual Entry',
+    uploadedAt: new Date().toISOString(),
+    chunks: [],
+    summary: {
+      topics: knowledge.topics,
+      emphasis: knowledge.emphasis,
+      assignments: knowledge.assignments
+    }
+  });
+  
+  await dbManager.saveSubjectData(subjectId, 'knowledge.json', kb);
+  res.json({ success: true });
+});
+
 app.post('/api/tutor', async (req, res) => {
   try {
     const { subject, message, history } = req.body;
@@ -182,6 +253,22 @@ app.post('/api/parse-knowledge', (req, res) => {
         emphasis: "-",
         assignments: "-"
       };
+    }
+
+
+    // Update DB with the summary
+    if (subjectId !== 'unknown-subject') {
+      try {
+        let kb = await dbManager.getSubjectData(subjectId, 'knowledge.json');
+        let weekData = kb.weeks.find(w => w.week === week);
+        if (weekData) {
+          let doc = weekData.documents.find(d => d.id === docId);
+          if (doc) doc.summary = parsedData;
+          await dbManager.saveSubjectData(subjectId, 'knowledge.json', kb);
+        }
+      } catch (err) {
+        console.error("Failed to update knowledge summary in DB:", err.message);
+      }
     }
 
     res.json(parsedData);

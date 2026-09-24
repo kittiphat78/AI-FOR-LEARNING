@@ -19,8 +19,26 @@ class DBManager {
       const data = await fs.readFile(path.join(DATA_DIR, 'semester.json'), 'utf8');
       return JSON.parse(data);
     } catch (e) {
-      return null; // Legacy semester not found
+      return null;
     }
+  }
+
+  async getFullSemesterData() {
+    let semester = await this.getSemester();
+    if (!semester) {
+      semester = { id: 'default', name: 'Semester', subjects: [] };
+    }
+    
+    // Instead of using legacy subjects, we build it from the isolated folders
+    const subjectIds = await this.getSubjectIds();
+    const subjects = [];
+    for (const sid of subjectIds) {
+      const meta = await this.getSubjectData(sid, 'metadata.json');
+      if (meta) subjects.push(meta);
+    }
+    
+    semester.subjects = subjects;
+    return semester;
   }
 
   // --- SUBJECTS ISOLATION ---
@@ -28,6 +46,42 @@ class DBManager {
     await this.ensureDirs();
     const entries = await fs.readdir(SUBJECTS_DIR, { withFileTypes: true });
     return entries.filter(e => e.isDirectory()).map(e => e.name);
+  }
+
+  async getAllTasks() {
+    const subjectIds = await this.getSubjectIds();
+    let allTasks = [];
+    for (const sid of subjectIds) {
+      const data = await this.getSubjectData(sid, 'tasks.json');
+      if (data && data.tasks) allTasks.push(...data.tasks);
+    }
+    return allTasks;
+  }
+
+  async getAllKnowledge() {
+    const subjectIds = await this.getSubjectIds();
+    let allKnowledge = [];
+    for (const sid of subjectIds) {
+      const kb = await this.getSubjectData(sid, 'knowledge.json');
+      // format knowledge to fit frontend expectations (flattened summary)
+      if (kb && kb.weeks) {
+        kb.weeks.forEach(w => {
+          w.documents.forEach(doc => {
+            if (doc.summary) {
+              allKnowledge.push({
+                subjectId: sid,
+                week: w.week,
+                docId: doc.id,
+                topics: doc.summary.topics || '',
+                emphasis: doc.summary.emphasis || '',
+                assignments: doc.summary.assignments || ''
+              });
+            }
+          });
+        });
+      }
+    }
+    return allKnowledge;
   }
 
   async getSubjectData(subjectId, filename) {
