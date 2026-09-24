@@ -13,6 +13,15 @@ const dbManager = require('./database/db');
 const app = express();
 const port = process.env.PORT || 3001;
 
+// Phase 5: In-Memory Job Queue
+const aiJobs = new Map();
+
+app.get('/api/jobs/:id', (req, res) => {
+  const job = aiJobs.get(req.params.id);
+  if (!job) return res.status(404).json({ error: 'Job not found' });
+  res.json(job);
+});
+
 // Set up multer for file upload in memory with 50MB limit
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -218,60 +227,69 @@ app.post('/api/parse-knowledge', (req, res) => {
       }
     }
 
-    // For real-time AI summary, we will just use the first chunk to avoid timeouts/limits
+    // PHASE 5: Asynchronous AI Job Queue
     const aiContextText = chunks.length > 0 ? chunks[0] : "";
-
-    const prompt = `
-      คุณคือ AI ผู้ช่วยนักศึกษา โปรดอ่านเนื้อหาจากสไลด์/เอกสารการเรียนต่อไปนี้ แล้วสกัดข้อมูลออกมาเป็น JSON เท่านั้น
-      (เนื้อหาอาจถูกตัดแบ่งมาเพียงส่วนแรก โปรดสรุปเท่าที่เห็น)
-      ห้ามตอบอย่างอื่นนอกจาก JSON 
-      
-      รูปแบบที่ต้องการ:
-      {
-        "topics": "หัวข้อหลักที่เรียนในเอกสารนี้ (เขียนสรุปเป็น Bullet points)",
-        "emphasis": "จุดที่อาจารย์เน้นย้ำ หรือสิ่งสำคัญที่น่าจะออกสอบ (ถ้าไม่มีให้ว่างไว้)",
-        "assignments": "งานหรือแบบฝึกหัดที่สั่งในเอกสาร (ถ้าไม่มีให้ว่างไว้)"
-      }
-
-      เนื้อหาเอกสาร:
-      ${aiContextText}
-    `;
-
-    let parsedData;
-    try {
-      const responseText = await aiProvider.generate(prompt);
-      let rawText = responseText.trim();
-      // Clean up potential markdown formatting around JSON
-      if (rawText.startsWith('\`\`\`json')) {
-        rawText = rawText.replace(/\`\`\`json/, '').replace(/\`\`\`/, '');
-      }
-      parsedData = JSON.parse(rawText);
-    } catch (aiError) {
-      console.error("AI Provider Error:", aiError.message);
-      parsedData = {
-        topics: `⚠️ ระบบ AI กำลังมีปัญหาชั่วคราว (แต่ไฟล์ของคุณถูกบันทึกและอ่านข้อมูลสำเร็จแล้ว 100%)\n\nระบบจะสามารถสรุปผลต่อได้เมื่อบริการ AI กลับมาใช้งาน\nError: ${aiError.message}`,
-        emphasis: "-",
-        assignments: "-"
-      };
-    }
-
-
-    // Update DB with the summary
-    if (subjectId !== 'unknown-subject') {
-      try {
-        let kb = await dbManager.getSubjectData(subjectId, 'knowledge.json');
-        let weekData = kb.weeks.find(w => w.week === week);
-        if (weekData) {
-          let doc = weekData.documents.find(d => d.id === docId);
-          if (doc) doc.summary = parsedData;
-          await dbManager.saveSubjectData(subjectId, 'knowledge.json', kb);
+    const jobId = `job-${Date.now()}`;
+    
+    // Create Job
+    aiJobs.set(jobId, { status: 'processing', progress: 0, result: null });
+    
+    // Start Background Promise (NO AWAIT)
+    (async () => {
+      const prompt = `
+        คุณคือ AI ผู้ช่วยนักศึกษา โปรดอ่านเนื้อหาจากสไลด์/เอกสารการเรียนต่อไปนี้ แล้วสกัดข้อมูลออกมาเป็น JSON เท่านั้น
+        (เนื้อหาอาจถูกตัดแบ่งมาเพียงส่วนแรก โปรดสรุปเท่าที่เห็น)
+        ห้ามตอบอย่างอื่นนอกจาก JSON 
+        
+        รูปแบบที่ต้องการ:
+        {
+          "topics": "หัวข้อหลักที่เรียนในเอกสารนี้ (เขียนสรุปเป็น Bullet points)",
+          "emphasis": "จุดที่อาจารย์เน้นย้ำ หรือสิ่งสำคัญที่น่าจะออกสอบ (ถ้าไม่มีให้ว่างไว้)",
+          "assignments": "งานหรือแบบฝึกหัดที่สั่งในเอกสาร (ถ้าไม่มีให้ว่างไว้)"
         }
-      } catch (err) {
-        console.error("Failed to update knowledge summary in DB:", err.message);
-      }
-    }
 
-    res.json(parsedData);
+        เนื้อหาเอกสาร:
+        ${aiContextText}
+      `;
+
+      let parsedData;
+      try {
+        const responseText = await aiProvider.generate(prompt);
+        let rawText = responseText.trim();
+        if (rawText.startsWith('\`\`\`json')) {
+          rawText = rawText.replace(/\`\`\`json/, '').replace(/\`\`\`/, '');
+        }
+        parsedData = JSON.parse(rawText);
+      } catch (aiError) {
+        console.error("AI Provider Error:", aiError.message);
+        parsedData = {
+          topics: `⚠️ ระบบ AI กำลังมีปัญหาชั่วคราว (แต่ไฟล์ของคุณถูกบันทึกและอ่านข้อมูลสำเร็จแล้ว 100%)\n\nระบบจะสามารถสรุปผลต่อได้เมื่อบริการ AI กลับมาใช้งาน\nError: ${aiError.message}`,
+          emphasis: "-",
+          assignments: "-"
+        };
+      }
+
+      // Update DB with the summary
+      if (subjectId !== 'unknown-subject') {
+        try {
+          let kb = await dbManager.getSubjectData(subjectId, 'knowledge.json');
+          let weekData = kb.weeks.find(w => w.week === week);
+          if (weekData) {
+            let doc = weekData.documents.find(d => d.id === docId);
+            if (doc) doc.summary = parsedData;
+            await dbManager.saveSubjectData(subjectId, 'knowledge.json', kb);
+          }
+        } catch (err) {
+          console.error("Failed to update knowledge summary in DB:", err.message);
+        }
+      }
+
+      // Finish Job
+      aiJobs.set(jobId, { status: 'completed', progress: 100, result: parsedData });
+    })();
+
+    // Immediately return the Job ID to the client
+    res.json({ jobId, message: 'File parsed successfully. AI is processing in the background.' });
 
   } catch (error) {
     console.error("Parse Error:", error);

@@ -529,14 +529,17 @@ function handleFilesSelected(files) {
     return res.json();
   })
   .then(data => {
-    aiProcessing.classList.remove('active');
-    
-    // Auto-fill form fields with AI extracted data
-    if (data.topics) document.getElementById('weekly-topics').value = data.topics;
-    if (data.emphasis) document.getElementById('weekly-emphasis').value = data.emphasis;
-    if (data.assignments) document.getElementById('weekly-assignments').value = data.assignments;
-    
-    showToast('AI อ่านเอกสารและสรุปข้อมูลให้แล้ว! ✨', 'success');
+    if (data.jobId) {
+      showToast('เริ่มประมวลผลด้วย AI...', 'info');
+      pollAIJob(data.jobId);
+    } else {
+      // Fallback if no jobId
+      aiProcessing.classList.remove('active');
+      if (data.topics) document.getElementById('weekly-topics').value = data.topics;
+      if (data.emphasis) document.getElementById('weekly-emphasis').value = data.emphasis;
+      if (data.assignments) document.getElementById('weekly-assignments').value = data.assignments;
+      showToast('AI อ่านเอกสารและสรุปข้อมูลให้แล้ว! ✨', 'success');
+    }
   })
   .catch(err => {
     console.error(err);
@@ -546,6 +549,37 @@ function handleFilesSelected(files) {
     document.getElementById('weekly-topics').value = "หัวข้อที่ 1: " + fileNames + "\n(เกิดข้อผิดพลาดในการดึงข้อมูลจาก AI หรือไม่ได้เปิด Backend)";
     showToast('มีปัญหาในการเชื่อมต่อ AI ⚠️', 'warning');
   });
+}
+
+// ==========================================
+// Phase 5: Async AI Job Polling
+// ==========================================
+function pollAIJob(jobId) {
+  const pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`http://localhost:3001/api/jobs/${jobId}`);
+      if (!res.ok) return;
+      const job = await res.json();
+      
+      if (job.status === 'completed') {
+        clearInterval(pollInterval);
+        document.getElementById('ai-processing').classList.remove('active');
+        
+        const data = job.result || {};
+        if (data.topics) document.getElementById('weekly-topics').value = data.topics;
+        if (data.emphasis) document.getElementById('weekly-emphasis').value = data.emphasis;
+        if (data.assignments) document.getElementById('weekly-assignments').value = data.assignments;
+        
+        showToast('AI อ่านเอกสารและสรุปข้อมูลให้แล้ว! ✨', 'success');
+      } else if (job.status === 'error') {
+        clearInterval(pollInterval);
+        document.getElementById('ai-processing').classList.remove('active');
+        showToast('เกิดข้อผิดพลาดในการประมวลผล AI', 'error');
+      }
+    } catch (e) {
+      console.warn('Polling error', e);
+    }
+  }, 2000); // Poll every 2 seconds
 }
 
 // ==========================================
