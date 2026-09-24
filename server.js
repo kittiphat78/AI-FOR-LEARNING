@@ -11,8 +11,11 @@ const { GoogleGenAI } = require('@google/genai');
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Set up multer for file upload in memory
-const upload = multer({ storage: multer.memoryStorage() });
+// Set up multer for file upload in memory with 50MB limit
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 } 
+});
 
 app.use(cors());
 app.use(express.json());
@@ -54,22 +57,26 @@ app.post('/api/tutor', async (req, res) => {
 // Helper to extract text from a buffer based on extension
 async function extractText(buffer, filename) {
   let ext = filename.toLowerCase().split('.').pop();
-  if (ext === 'jpeg' || ext === 'jpg' || ext === 'png') return '';
+  const allowed = ['pdf', 'docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls', 'odt', 'odp', 'ods', 'txt', 'md', 'csv'];
+  
+  if (!allowed.includes(ext)) return '[UNSUPPORTED_FORMAT]';
   
   try {
     if (ext === 'pdf') {
       const data = await pdfParse(buffer);
+      if (!data.text || data.text.trim().length === 0) return '[TEXT_NOT_FOUND: Possible Image-only PDF]';
       return data.text;
     } else if (['docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls', 'odt', 'odp', 'ods'].includes(ext)) {
-      // officeparser parses these formats
       const data = await parseOffice(buffer, { fileType: ext });
       const txt = await data.to('txt');
+      if (!txt.value || txt.value.trim().length === 0) return '[TEXT_NOT_FOUND: Empty Document]';
       return txt.value;
     } else if (['txt', 'md', 'csv'].includes(ext)) {
       return buffer.toString('utf-8');
     }
   } catch (err) {
-    console.error(`Failed to parse ${filename}:`, err);
+    console.error(`Failed to parse ${filename}:`, err.message);
+    return `[PARSE_ERROR: ${err.message}]`;
   }
   return '';
 }
@@ -88,24 +95,28 @@ app.post('/api/parse-knowledge', upload.single('file'), async (req, res) => {
       const zip = new AdmZip(req.file.buffer);
       const zipEntries = zip.getEntries();
       
+      let processedFiles = 0;
       for (const zipEntry of zipEntries) {
         if (!zipEntry.isDirectory) {
+           // Prevent Path Traversal
+           if (zipEntry.entryName.includes('..')) continue;
+           
            const parsedText = await extractText(zipEntry.getData(), zipEntry.entryName);
            if (parsedText && String(parsedText).trim().length > 0) {
              textContent += `\n\n--- Document: ${zipEntry.entryName} ---\n\n` + parsedText;
+             processedFiles++;
            }
         }
       }
       
-      if (!textContent) {
-        return res.status(400).json({ error: 'ไม่พบไฟล์ที่รองรับการอ่านข้อความใน ZIP นี้' });
+      if (processedFiles === 0 || !textContent.trim()) {
+        return res.status(400).json({ error: 'ไม่พบไฟล์ที่รองรับการอ่านข้อความใน ZIP นี้ หรือไฟล์เป็นรูปภาพทั้งหมด' });
       }
     } else {
       // Handle single file
       textContent = await extractText(req.file.buffer, req.file.originalname);
-      if (!textContent || String(textContent).trim().length === 0) {
-        // Fallback
-        textContent = req.file.buffer.toString('utf-8'); 
+      if (!textContent || textContent.includes('[UNSUPPORTED_FORMAT]')) {
+        return res.status(400).json({ error: 'ไฟล์ประเภทนี้ยังไม่รองรับ หรือไม่พบเนื้อหาตัวอักษร' });
       }
     }
 
