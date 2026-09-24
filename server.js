@@ -94,7 +94,7 @@ app.post('/api/parse-knowledge', upload.single('file'), async (req, res) => {
   }
 });
 
-// Phase 9.2: Automated MS Teams Notification (Simulation)
+// Phase 9.2: Automated MS Teams Notification (Actual Webhook)
 app.post('/api/notify/teams', async (req, res) => {
   try {
     const { tasks } = req.body;
@@ -103,18 +103,59 @@ app.post('/api/notify/teams', async (req, res) => {
       return res.status(200).json({ message: 'No urgent tasks to notify.' });
     }
 
-    // In a real scenario, this would send an Adaptive Card to MS Teams Webhook URL
-    // e.g., fetch(process.env.TEAMS_WEBHOOK_URL, { method: 'POST', body: JSON.stringify(adaptiveCard) })
+    const webhookUrl = process.env.TEAMS_WEBHOOK_URL;
+
+    // Log to console first
+    console.log(`\n🔔 [MS Teams Notification Initiated]`);
+    console.log(`Sending alert for ${tasks.length} urgent task(s)...`);
     
-    console.log(`\n🔔 [MS Teams Notification Simulated]`);
-    console.log(`Sending alert for ${tasks.length} urgent task(s):`);
-    tasks.forEach(t => console.log(` - [${t.subject}] ${t.name} (Due: ${t.deadline})`));
+    // Construct the payload for MS Teams (MessageCard format)
+    const facts = tasks.map(t => ({
+      name: `📌 [${t.subject || 'Unknown'}] ${t.name}`,
+      value: `กำหนดส่ง: **${t.deadline}**`
+    }));
+
+    const payload = {
+      "@type": "MessageCard",
+      "@context": "http://schema.org/extensions",
+      "themeColor": "D97706",
+      "summary": "AI Study Team - แจ้งเตือนงานด่วน",
+      "sections": [{
+        "activityTitle": "🚨 มีงานด่วนใกล้ถึงกำหนดส่ง!",
+        "activitySubtitle": "แจ้งเตือนอัตโนมัติจาก AI Study Team",
+        "activityImage": "https://cdn-icons-png.flaticon.com/512/3233/3233483.png",
+        "facts": facts,
+        "markdown": true
+      }]
+    };
+
+    if (!webhookUrl || webhookUrl.trim() === '' || webhookUrl === 'your_teams_webhook_url_here') {
+      console.log(`⚠️ TEAMS_WEBHOOK_URL is not set in .env! Simulating output instead.`);
+      tasks.forEach(t => console.log(` - [${t.subject}] ${t.name} (Due: ${t.deadline})`));
+      console.log(`========================================\n`);
+      return res.json({ success: true, message: 'บันทึกแจ้งเตือนลง Console สำเร็จ (กรุณาตั้งค่า TEAMS_WEBHOOK_URL เพื่อส่งเข้า MS Teams จริง)' });
+    }
+
+    // Send to MS Teams Webhook
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error(`Teams API Error: ${response.status} - ${errText}`);
+      throw new Error(`Failed to send to MS Teams: ${response.statusText}`);
+    }
+
+    console.log(`✅ Successfully sent to MS Teams!`);
     console.log(`========================================\n`);
 
-    res.json({ success: true, message: 'แจ้งเตือนไปยัง MS Teams จำลองสำเร็จ!' });
+    res.json({ success: true, message: 'แจ้งเตือนไปยัง MS Teams สำเร็จแล้ว!' });
   } catch (error) {
     console.error("Teams Notify Error:", error);
-    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการส่งแจ้งเตือน' });
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการส่งแจ้งเตือน: ' + error.message });
   }
 });
 
