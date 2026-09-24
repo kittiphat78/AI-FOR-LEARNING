@@ -1,0 +1,27 @@
+{
+  "id": "science-movies",
+  "shortName": "SIM",
+  "name": "Science in the Movies and Entertainment Media",
+  "nameTH": "วิทยาศาสตร์ในภาพยนตร์และสื่อบันเทิง",
+  "credits": "3 (2-2-5)",
+  "creditNum": 3,
+  "type": "elective",
+  "color": "#f43f5e",
+  "icon": "🎬",
+  "schedule": [
+    {
+      "day": "TBD",
+      "time": "TBD",
+      "room": "UB 005",
+      "type": "lecture"
+    },
+    {
+      "day": "TBD",
+      "time": "TBD",
+      "room": "UB 005",
+      "type": "lab"
+    }
+  ],
+  "currentWeek": 0,
+  "progress": 0
+}

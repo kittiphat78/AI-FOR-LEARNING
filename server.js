@@ -7,6 +7,8 @@ const AdmZip = require('adm-zip');
 const { parseOffice } = require('officeparser');
 const path = require('path');
 const GeminiProvider = require('./providers/GeminiProvider');
+const TextChunker = require('./utils/chunker');
+const dbManager = require('./database/db');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -113,13 +115,44 @@ app.post('/api/parse-knowledge', (req, res) => {
       }
     }
 
-    // Limit text length to prevent exceeding token limits
-    if (textContent.length > 25000) {
-      textContent = textContent.substring(0, 25000); 
+    // PHASE 3: Semantic Chunking & DB Isolation
+    const chunks = TextChunker.chunk(textContent, 15000); // 15k chars per chunk
+    const subjectId = req.body.subjectId || 'unknown-subject';
+    const week = parseInt(req.body.week || '1');
+    
+    // Save to Database Background Task
+    const docId = `doc-${Date.now()}`;
+    const knowledgeData = {
+      id: docId,
+      fileName: req.file.originalname,
+      uploadedAt: new Date().toISOString(),
+      chunks: chunks.map((c, i) => ({ chunkId: `${docId}-c${i}`, text: c }))
+    };
+
+    if (subjectId !== 'unknown-subject') {
+      try {
+        let kb = await dbManager.getSubjectData(subjectId, 'knowledge.json');
+        if (!kb) kb = { subjectId, weeks: [] };
+        
+        let weekData = kb.weeks.find(w => w.week === week);
+        if (!weekData) {
+          weekData = { week, documents: [] };
+          kb.weeks.push(weekData);
+        }
+        weekData.documents.push(knowledgeData);
+        
+        await dbManager.saveSubjectData(subjectId, 'knowledge.json', kb);
+      } catch (err) {
+        console.error("Failed to save knowledge to DB:", err.message);
+      }
     }
+
+    // For real-time AI summary, we will just use the first chunk to avoid timeouts/limits
+    const aiContextText = chunks.length > 0 ? chunks[0] : "";
 
     const prompt = `
       คุณคือ AI ผู้ช่วยนักศึกษา โปรดอ่านเนื้อหาจากสไลด์/เอกสารการเรียนต่อไปนี้ แล้วสกัดข้อมูลออกมาเป็น JSON เท่านั้น
+      (เนื้อหาอาจถูกตัดแบ่งมาเพียงส่วนแรก โปรดสรุปเท่าที่เห็น)
       ห้ามตอบอย่างอื่นนอกจาก JSON 
       
       รูปแบบที่ต้องการ:
@@ -130,7 +163,7 @@ app.post('/api/parse-knowledge', (req, res) => {
       }
 
       เนื้อหาเอกสาร:
-      ${textContent}
+      ${aiContextText}
     `;
 
     let parsedData;

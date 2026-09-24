@@ -1,0 +1,27 @@
+{
+  "id": "blockchain",
+  "shortName": "BC",
+  "name": "Blockchain Technology",
+  "nameTH": "เทคโนโลยีบล็อกเชน",
+  "credits": "3 (2-2-5)",
+  "creditNum": 3,
+  "type": "core",
+  "color": "#a855f7",
+  "icon": "⛓️",
+  "schedule": [
+    {
+      "day": "TBD",
+      "time": "TBD",
+      "room": "ห้องสมุด",
+      "type": "lecture"
+    },
+    {
+      "day": "TBD",
+      "time": "TBD",
+      "room": "ICT1219/1",
+      "type": "lab"
+    }
+  ],
+  "currentWeek": 0,
+  "progress": 0
+}

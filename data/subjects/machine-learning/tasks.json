@@ -1,0 +1,14 @@
+{
+  "tasks": [
+    {
+      "id": "task-002",
+      "subjectId": "machine-learning",
+      "name": "Lab 5 — Neural Network",
+      "description": "Implement basic neural network from scratch using Python",
+      "receivedDate": "2026-09-22",
+      "deadline": "2026-09-29",
+      "status": "IN_PROGRESS",
+      "deliverables": "Jupyter Notebook\nรายงานผลการทดลอง"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "design-thinking",
+  "shortName": "DT",
+  "name": "Design Thinking Process for Digital Age Entrepreneurs",
+  "nameTH": "กระบวนการคิดเชิงออกแบบสู่การเป็นผู้ประกอบการยุคดิจิทัล",
+  "credits": "3 (2-2-5)",
+  "creditNum": 3,
+  "type": "elective",
+  "color": "#f59e0b",
+  "icon": "💡",
+  "schedule": [
+    {
+      "day": "TBD",
+      "time": "TBD",
+      "room": "UB 001-005",
+      "type": "lecture"
+    }
+  ],
+  "currentWeek": 0,
+  "progress": 0
+}

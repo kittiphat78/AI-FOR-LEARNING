@@ -505,6 +505,12 @@ function handleFilesSelected(files) {
   
   const formData = new FormData();
   formData.append('file', files[0]); // Send first file for now
+  
+  const subjectEl = document.getElementById('weekly-subject');
+  if (subjectEl) formData.append('subjectId', subjectEl.value);
+  
+  const weekEl = document.getElementById('weekly-week');
+  if (weekEl) formData.append('week', weekEl.value);
 
   fetch('http://localhost:3001/api/parse-knowledge', {
     method: 'POST',

@@ -1,0 +1,14 @@
+{
+  "tasks": [
+    {
+      "id": "task-003",
+      "subjectId": "blockchain",
+      "name": "สรุป Chapter 6",
+      "description": "อ่านและสรุปเรื่อง Smart Contract",
+      "receivedDate": "2026-09-18",
+      "deadline": "2026-10-02",
+      "status": "TODO",
+      "deliverables": "ไฟล์สรุป PDF"
+    }
+  ]
+}

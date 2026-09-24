@@ -1,0 +1,27 @@
+{
+  "id": "software-engineering",
+  "shortName": "SE",
+  "name": "Software Engineering Concepts",
+  "nameTH": "แนวคิดวิศวกรรมซอฟต์แวร์",
+  "credits": "3 (2-2-5)",
+  "creditNum": 3,
+  "type": "core",
+  "color": "#3b82f6",
+  "icon": "⚙️",
+  "schedule": [
+    {
+      "day": "Tuesday",
+      "time": "TBD",
+      "room": "ICT 1107",
+      "type": "lecture"
+    },
+    {
+      "day": "Wednesday",
+      "time": "TBD",
+      "room": "ICT1103/1",
+      "type": "lab"
+    }
+  ],
+  "currentWeek": 0,
+  "progress": 0
+}

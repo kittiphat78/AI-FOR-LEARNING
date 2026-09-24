@@ -1,0 +1,21 @@
+{
+  "id": "mobile-app-dev",
+  "shortName": "MAD",
+  "name": "Mobile Application Development",
+  "nameTH": "การพัฒนาแอปพลิเคชันสำหรับอุปกรณ์เคลื่อนที่",
+  "credits": "3 (2-2-5)",
+  "creditNum": 3,
+  "type": "core",
+  "color": "#ec4899",
+  "icon": "📱",
+  "schedule": [
+    {
+      "day": "TBD",
+      "time": "TBD",
+      "room": "ICT1102/1",
+      "type": "lab"
+    }
+  ],
+  "currentWeek": 0,
+  "progress": 0
+}

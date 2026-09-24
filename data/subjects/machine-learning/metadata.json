@@ -1,0 +1,27 @@
+{
+  "id": "machine-learning",
+  "shortName": "ML",
+  "name": "Machine Learning",
+  "nameTH": "การเรียนรู้ของเครื่อง",
+  "credits": "3 (2-2-5)",
+  "creditNum": 3,
+  "type": "core",
+  "color": "#10b981",
+  "icon": "🤖",
+  "schedule": [
+    {
+      "day": "TBD",
+      "time": "TBD",
+      "room": "ICT 1109",
+      "type": "lecture"
+    },
+    {
+      "day": "TBD",
+      "time": "TBD",
+      "room": "ICT1102",
+      "type": "lab"
+    }
+  ],
+  "currentWeek": 0,
+  "progress": 0
+}

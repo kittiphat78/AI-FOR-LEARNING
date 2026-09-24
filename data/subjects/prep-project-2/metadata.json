@@ -1,0 +1,21 @@
+{
+  "id": "prep-project-2",
+  "shortName": "PREP-PJ",
+  "name": "Preparation for CS Project II",
+  "nameTH": "การเตรียมพร้อมสำหรับโครงงานวิทยาการคอมพิวเตอร์ 2",
+  "credits": "1 (0-2-1)",
+  "creditNum": 1,
+  "type": "project",
+  "color": "#8b5cf6",
+  "icon": "📋",
+  "schedule": [
+    {
+      "day": "TBD",
+      "time": "TBD",
+      "room": "ICT 1107",
+      "type": "practice"
+    }
+  ],
+  "currentWeek": 0,
+  "progress": 0
+}

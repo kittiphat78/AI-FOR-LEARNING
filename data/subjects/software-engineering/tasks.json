@@ -1,0 +1,14 @@
+{
+  "tasks": [
+    {
+      "id": "task-001",
+      "subjectId": "software-engineering",
+      "name": "Assignment 3 — UML Diagrams",
+      "description": "วาด Use Case และ Class Diagram",
+      "receivedDate": "2026-09-20",
+      "deadline": "2026-09-27",
+      "status": "TODO",
+      "deliverables": "Use Case Diagram\nClass Diagram\nรายงาน"
+    }
+  ]
+}

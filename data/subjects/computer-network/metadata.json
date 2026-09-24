@@ -1,0 +1,27 @@
+{
+  "id": "computer-network",
+  "shortName": "CN",
+  "name": "Computer Network for Software Development",
+  "nameTH": "เครือข่ายคอมพิวเตอร์สำหรับการพัฒนาซอฟต์แวร์",
+  "credits": "3 (2-2-5)",
+  "creditNum": 3,
+  "type": "core",
+  "color": "#06b6d4",
+  "icon": "🌐",
+  "schedule": [
+    {
+      "day": "Tuesday",
+      "time": "TBD",
+      "room": "ICT 1107",
+      "type": "lecture"
+    },
+    {
+      "day": "Wednesday",
+      "time": "TBD",
+      "room": "ICT 1402",
+      "type": "lab"
+    }
+  ],
+  "currentWeek": 0,
+  "progress": 0
+}

@@ -1,0 +1,21 @@
+{
+  "id": "prep-professional",
+  "shortName": "PREP-PRO",
+  "name": "Preparation for CS Professional Experience",
+  "nameTH": "การเตรียมพร้อมฝึกประสบการณ์วิชาชีพวิทยาการคอมพิวเตอร์",
+  "credits": "1 (0-2-1)",
+  "creditNum": 1,
+  "type": "preparation",
+  "color": "#6366f1",
+  "icon": "🏢",
+  "schedule": [
+    {
+      "day": "TBD",
+      "time": "TBD",
+      "room": "ติดต่อผู้สอน",
+      "type": "practice"
+    }
+  ],
+  "currentWeek": 0,
+  "progress": 0
+}
