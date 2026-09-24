@@ -6,7 +6,7 @@ const pdfParse = require('pdf-parse');
 const AdmZip = require('adm-zip');
 const { parseOffice } = require('officeparser');
 const path = require('path');
-const { GoogleGenAI } = require('@google/genai');
+const GeminiProvider = require('./providers/GeminiProvider');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -20,22 +20,8 @@ const upload = multer({
 app.use(cors());
 app.use(express.json());
 
-// Initialize Gemini API
-const ai = new GoogleGenAI({});
-
-// Helper to retry Gemini API calls
-async function generateContentWithRetry(model, prompt, maxRetries = 3) {
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await ai.models.generateContent({ model, contents: prompt });
-    } catch (err) {
-      console.warn(`Gemini API attempt ${i + 1} failed: ${err.message}`);
-      if (i === maxRetries - 1) throw err;
-      // Wait for 2 seconds before retrying
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    }
-  }
-}
+// Initialize AI Provider
+const aiProvider = new GeminiProvider();
 
 app.post('/api/tutor', async (req, res) => {
   try {
@@ -45,9 +31,9 @@ app.post('/api/tutor', async (req, res) => {
     Your goal is to explain concepts clearly, use simple analogies, and be encouraging. 
     User's message: ${message}`;
 
-    const response = await generateContentWithRetry('gemini-3.6-flash', prompt);
+    const responseText = await aiProvider.generate(prompt);
     
-    res.json({ reply: response.text });
+    res.json({ reply: responseText });
   } catch (error) {
     console.error("Gemini API Error:", error);
     res.status(500).json({ error: 'เกิดข้อผิดพลาดในการเชื่อมต่อกับ AI' });
@@ -140,15 +126,24 @@ app.post('/api/parse-knowledge', upload.single('file'), async (req, res) => {
       ${textContent}
     `;
 
-    const response = await generateContentWithRetry('gemini-3.6-flash', prompt);
-
-    let rawText = response.text.trim();
-    // Clean up potential markdown formatting around JSON
-    if (rawText.startsWith('\`\`\`json')) {
-      rawText = rawText.replace(/\`\`\`json/, '').replace(/\`\`\`/, '');
+    let parsedData;
+    try {
+      const responseText = await aiProvider.generate(prompt);
+      let rawText = responseText.trim();
+      // Clean up potential markdown formatting around JSON
+      if (rawText.startsWith('\`\`\`json')) {
+        rawText = rawText.replace(/\`\`\`json/, '').replace(/\`\`\`/, '');
+      }
+      parsedData = JSON.parse(rawText);
+    } catch (aiError) {
+      console.error("AI Provider Error:", aiError.message);
+      parsedData = {
+        topics: `⚠️ ระบบ AI กำลังมีปัญหาชั่วคราว (แต่ไฟล์ของคุณถูกบันทึกและอ่านข้อมูลสำเร็จแล้ว 100%)\n\nระบบจะสามารถสรุปผลต่อได้เมื่อบริการ AI กลับมาใช้งาน\nError: ${aiError.message}`,
+        emphasis: "-",
+        assignments: "-"
+      };
     }
 
-    const parsedData = JSON.parse(rawText);
     res.json(parsedData);
 
   } catch (error) {
