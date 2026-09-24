@@ -58,7 +58,9 @@ async function extractText(buffer, filename) {
   try {
     if (['pdf', 'docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls', 'odt', 'odp', 'ods'].includes(ext)) {
       // officeparser parses these formats
-      return await parseOffice(buffer, { fileType: ext });
+      const data = await parseOffice(buffer, { fileType: ext });
+      const txt = await data.to('txt');
+      return txt.value;
     } else if (['txt', 'md', 'csv'].includes(ext)) {
       return buffer.toString('utf-8');
     }
