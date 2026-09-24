@@ -1,0 +1,168 @@
+{
+  "id": "2026-1",
+  "name": "ภาคเรียนที่ 1/2569",
+  "nameEN": "Semester 1/2026",
+  "startDate": "2026-06-01",
+  "endDate": "2026-10-31",
+  "currentWeekEstimate": 14,
+  "midterm": {
+    "status": "completed",
+    "note": "สอบ Midterm ไปแล้ว"
+  },
+  "final": {
+    "status": "upcoming",
+    "note": ""
+  },
+  "totalCredits": 23,
+  "subjects": [
+    {
+      "id": "prep-professional",
+      "shortName": "PREP-PRO",
+      "name": "Preparation for CS Professional Experience",
+      "nameTH": "การเตรียมพร้อมฝึกประสบการณ์วิชาชีพวิทยาการคอมพิวเตอร์",
+      "credits": "1 (0-2-1)",
+      "creditNum": 1,
+      "type": "preparation",
+      "color": "#6366f1",
+      "icon": "🏢",
+      "schedule": [
+        { "day": "TBD", "time": "TBD", "room": "ติดต่อผู้สอน", "type": "practice" }
+      ],
+      "currentWeek": 0,
+      "progress": 0
+    },
+    {
+      "id": "prep-project-2",
+      "shortName": "PREP-PJ",
+      "name": "Preparation for CS Project II",
+      "nameTH": "การเตรียมพร้อมสำหรับโครงงานวิทยาการคอมพิวเตอร์ 2",
+      "credits": "1 (0-2-1)",
+      "creditNum": 1,
+      "type": "project",
+      "color": "#8b5cf6",
+      "icon": "📋",
+      "schedule": [
+        { "day": "TBD", "time": "TBD", "room": "ICT 1107", "type": "practice" }
+      ],
+      "currentWeek": 0,
+      "progress": 0
+    },
+    {
+      "id": "software-engineering",
+      "shortName": "SE",
+      "name": "Software Engineering Concepts",
+      "nameTH": "แนวคิดวิศวกรรมซอฟต์แวร์",
+      "credits": "3 (2-2-5)",
+      "creditNum": 3,
+      "type": "core",
+      "color": "#3b82f6",
+      "icon": "⚙️",
+      "schedule": [
+        { "day": "Tuesday", "time": "TBD", "room": "ICT 1107", "type": "lecture" },
+        { "day": "Wednesday", "time": "TBD", "room": "ICT1103/1", "type": "lab" }
+      ],
+      "currentWeek": 0,
+      "progress": 0
+    },
+    {
+      "id": "computer-network",
+      "shortName": "CN",
+      "name": "Computer Network for Software Development",
+      "nameTH": "เครือข่ายคอมพิวเตอร์สำหรับการพัฒนาซอฟต์แวร์",
+      "credits": "3 (2-2-5)",
+      "creditNum": 3,
+      "type": "core",
+      "color": "#06b6d4",
+      "icon": "🌐",
+      "schedule": [
+        { "day": "Tuesday", "time": "TBD", "room": "ICT 1107", "type": "lecture" },
+        { "day": "Wednesday", "time": "TBD", "room": "ICT 1402", "type": "lab" }
+      ],
+      "currentWeek": 0,
+      "progress": 0
+    },
+    {
+      "id": "science-movies",
+      "shortName": "SIM",
+      "name": "Science in the Movies and Entertainment Media",
+      "nameTH": "วิทยาศาสตร์ในภาพยนตร์และสื่อบันเทิง",
+      "credits": "3 (2-2-5)",
+      "creditNum": 3,
+      "type": "elective",
+      "color": "#f43f5e",
+      "icon": "🎬",
+      "schedule": [
+        { "day": "TBD", "time": "TBD", "room": "UB 005", "type": "lecture" },
+        { "day": "TBD", "time": "TBD", "room": "UB 005", "type": "lab" }
+      ],
+      "currentWeek": 0,
+      "progress": 0
+    },
+    {
+      "id": "machine-learning",
+      "shortName": "ML",
+      "name": "Machine Learning",
+      "nameTH": "การเรียนรู้ของเครื่อง",
+      "credits": "3 (2-2-5)",
+      "creditNum": 3,
+      "type": "core",
+      "color": "#10b981",
+      "icon": "🤖",
+      "schedule": [
+        { "day": "TBD", "time": "TBD", "room": "ICT 1109", "type": "lecture" },
+        { "day": "TBD", "time": "TBD", "room": "ICT1102", "type": "lab" }
+      ],
+      "currentWeek": 0,
+      "progress": 0
+    },
+    {
+      "id": "design-thinking",
+      "shortName": "DT",
+      "name": "Design Thinking Process for Digital Age Entrepreneurs",
+      "nameTH": "กระบวนการคิดเชิงออกแบบสู่การเป็นผู้ประกอบการยุคดิจิทัล",
+      "credits": "3 (2-2-5)",
+      "creditNum": 3,
+      "type": "elective",
+      "color": "#f59e0b",
+      "icon": "💡",
+      "schedule": [
+        { "day": "TBD", "time": "TBD", "room": "UB 001-005", "type": "lecture" }
+      ],
+      "currentWeek": 0,
+      "progress": 0
+    },
+    {
+      "id": "blockchain",
+      "shortName": "BC",
+      "name": "Blockchain Technology",
+      "nameTH": "เทคโนโลยีบล็อกเชน",
+      "credits": "3 (2-2-5)",
+      "creditNum": 3,
+      "type": "core",
+      "color": "#a855f7",
+      "icon": "⛓️",
+      "schedule": [
+        { "day": "TBD", "time": "TBD", "room": "ห้องสมุด", "type": "lecture" },
+        { "day": "TBD", "time": "TBD", "room": "ICT1219/1", "type": "lab" }
+      ],
+      "currentWeek": 0,
+      "progress": 0
+    },
+    {
+      "id": "mobile-app-dev",
+      "shortName": "MAD",
+      "name": "Mobile Application Development",
+      "nameTH": "การพัฒนาแอปพลิเคชันสำหรับอุปกรณ์เคลื่อนที่",
+      "credits": "3 (2-2-5)",
+      "creditNum": 3,
+      "type": "core",
+      "color": "#ec4899",
+      "icon": "📱",
+      "schedule": [
+        { "day": "TBD", "time": "TBD", "room": "ICT1102/1", "type": "lab" }
+      ],
+      "currentWeek": 0,
+      "progress": 0
+    }
+  ]
+}
