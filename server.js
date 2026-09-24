@@ -110,8 +110,8 @@ app.post('/api/parse-knowledge', upload.single('file'), async (req, res) => {
     }
 
     // Limit text length to prevent exceeding token limits
-    if (textContent.length > 50000) {
-      textContent = textContent.substring(0, 50000); 
+    if (textContent.length > 25000) {
+      textContent = textContent.substring(0, 25000); 
     }
 
     const prompt = `
