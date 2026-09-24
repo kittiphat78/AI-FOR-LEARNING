@@ -252,18 +252,26 @@ app.post('/api/parse-knowledge', (req, res) => {
         ${aiContextText}
       `;
 
-      let parsedData;
+      let parsedData = { topics: "", emphasis: "-", assignments: "-" };
       try {
         const responseText = await aiProvider.generate(prompt);
         let rawText = responseText.trim();
-        if (rawText.startsWith('\`\`\`json')) {
-          rawText = rawText.replace(/\`\`\`json/, '').replace(/\`\`\`/, '');
+        // aggressively clean markdown blocks
+        rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+        
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const extracted = JSON.parse(jsonMatch[0]);
+          parsedData.topics = extracted.topics || extracted.Topics || extracted.หัวข้อ || JSON.stringify(extracted);
+          parsedData.emphasis = extracted.emphasis || extracted.Emphasis || extracted.เน้นย้ำ || "-";
+          parsedData.assignments = extracted.assignments || extracted.Assignments || extracted.การบ้าน || "-";
+        } else {
+          parsedData.topics = rawText; // Fallback to raw text if not JSON
         }
-        parsedData = JSON.parse(rawText);
       } catch (aiError) {
         console.error("AI Provider Error:", aiError.message);
         parsedData = {
-          topics: `⚠️ ระบบ AI กำลังมีปัญหาชั่วคราว (แต่ไฟล์ของคุณถูกบันทึกและอ่านข้อมูลสำเร็จแล้ว 100%)\n\nระบบจะสามารถสรุปผลต่อได้เมื่อบริการ AI กลับมาใช้งาน\nError: ${aiError.message}`,
+          topics: `⚠️ ระบบ AI กำลังมีปัญหาชั่วคราว หรือประมวลผลผิดพลาด\n\nError: ${aiError.message}`,
           emphasis: "-",
           assignments: "-"
         };
