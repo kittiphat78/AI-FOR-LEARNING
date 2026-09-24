@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
-const pdfParse = require('pdf-parse');
 const AdmZip = require('adm-zip');
 const { parseOffice } = require('officeparser');
 const path = require('path');
@@ -20,6 +19,20 @@ app.use(express.json());
 // Initialize Gemini API
 const ai = new GoogleGenAI({});
 
+// Helper to retry Gemini API calls
+async function generateContentWithRetry(model, prompt, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await ai.models.generateContent({ model, contents: prompt });
+    } catch (err) {
+      console.warn(`Gemini API attempt ${i + 1} failed: ${err.message}`);
+      if (i === maxRetries - 1) throw err;
+      // Wait for 2 seconds before retrying
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+  }
+}
+
 app.post('/api/tutor', async (req, res) => {
   try {
     const { subject, message, history } = req.body;
@@ -28,10 +41,7 @@ app.post('/api/tutor', async (req, res) => {
     Your goal is to explain concepts clearly, use simple analogies, and be encouraging. 
     User's message: ${message}`;
 
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt,
-    });
+    const response = await generateContentWithRetry('gemini-3.6-flash', prompt);
     
     res.json({ reply: response.text });
   } catch (error) {
@@ -42,12 +52,11 @@ app.post('/api/tutor', async (req, res) => {
 
 // Helper to extract text from a buffer based on extension
 async function extractText(buffer, filename) {
-  const ext = filename.toLowerCase().split('.').pop();
+  let ext = filename.toLowerCase().split('.').pop();
+  if (ext === 'jpeg' || ext === 'jpg' || ext === 'png') return '';
+  
   try {
-    if (ext === 'pdf') {
-      const data = await pdfParse(buffer);
-      return data.text;
-    } else if (['docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls', 'odt', 'odp', 'ods'].includes(ext)) {
+    if (['pdf', 'docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls', 'odt', 'odp', 'ods'].includes(ext)) {
       // officeparser parses these formats
       return await parseOffice(buffer, { fileType: ext });
     } else if (['txt', 'md', 'csv'].includes(ext)) {
@@ -76,7 +85,7 @@ app.post('/api/parse-knowledge', upload.single('file'), async (req, res) => {
       for (const zipEntry of zipEntries) {
         if (!zipEntry.isDirectory) {
            const parsedText = await extractText(zipEntry.getData(), zipEntry.entryName);
-           if (parsedText && parsedText.trim().length > 0) {
+           if (parsedText && String(parsedText).trim().length > 0) {
              textContent += `\n\n--- Document: ${zipEntry.entryName} ---\n\n` + parsedText;
            }
         }
@@ -88,7 +97,7 @@ app.post('/api/parse-knowledge', upload.single('file'), async (req, res) => {
     } else {
       // Handle single file
       textContent = await extractText(req.file.buffer, req.file.originalname);
-      if (!textContent || textContent.trim().length === 0) {
+      if (!textContent || String(textContent).trim().length === 0) {
         // Fallback
         textContent = req.file.buffer.toString('utf-8'); 
       }
@@ -114,10 +123,7 @@ app.post('/api/parse-knowledge', upload.single('file'), async (req, res) => {
       ${textContent}
     `;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
+    const response = await generateContentWithRetry('gemini-3.6-flash', prompt);
 
     let rawText = response.text.trim();
     // Clean up potential markdown formatting around JSON
