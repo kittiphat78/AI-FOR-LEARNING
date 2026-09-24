@@ -1,5 +1,17 @@
 # Changelog
 
+## [v1.0.0] - Stable Release
+
+### Added
+- Custom scrollbar styling for a premium feel
+- Smooth scrolling behavior
+
+### Changed
+- Final UI/UX polish across the application
+- Cleaned up mock data references
+
+# Changelog
+
 ## [v0.9.0] - Phase 9 Automation
 
 ### Added
@@ -17,3 +29,4 @@
 
 ### Security
 - Added `.gitignore` to prevent tracking `.env` and `node_modules`
+
