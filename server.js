@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const pdfParse = require('pdf-parse');
+const AdmZip = require('adm-zip');
 const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
@@ -49,8 +50,27 @@ app.post('/api/parse-knowledge', upload.single('file'), async (req, res) => {
     if (req.file.mimetype === 'application/pdf') {
       const data = await pdfParse(req.file.buffer);
       textContent = data.text;
+    } else if (req.file.mimetype === 'application/zip' || req.file.mimetype === 'application/x-zip-compressed' || req.file.originalname.endsWith('.zip')) {
+      // Handle ZIP file
+      const zip = new AdmZip(req.file.buffer);
+      const zipEntries = zip.getEntries();
+      
+      for (const zipEntry of zipEntries) {
+        if (!zipEntry.isDirectory && zipEntry.entryName.toLowerCase().endsWith('.pdf')) {
+          try {
+            const pdfData = await pdfParse(zipEntry.getData());
+            textContent += `\n\n--- Document: ${zipEntry.entryName} ---\n\n` + pdfData.text;
+          } catch (err) {
+            console.error(`Failed to parse PDF inside zip: ${zipEntry.entryName}`, err);
+          }
+        }
+      }
+      
+      if (!textContent) {
+        return res.status(400).json({ error: 'ไม่พบไฟล์ PDF ในไฟล์ ZIP นี้' });
+      }
     } else {
-      // For now, if not PDF, we just pretend we read it or handle text
+      // For now, if not PDF or ZIP, we just pretend we read it or handle text
       textContent = req.file.buffer.toString('utf-8'); 
     }
 
