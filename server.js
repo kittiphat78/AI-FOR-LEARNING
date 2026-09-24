@@ -42,7 +42,7 @@ app.post('/api/tutor', async (req, res) => {
     Your goal is to explain concepts clearly, use simple analogies, and be encouraging. 
     User's message: ${message}`;
 
-    const response = await generateContentWithRetry('gemini-3.6-flash', prompt);
+    const response = await generateContentWithRetry('gemini-2-flash', prompt);
     
     res.json({ reply: response.text });
   } catch (error) {
@@ -129,7 +129,7 @@ app.post('/api/parse-knowledge', upload.single('file'), async (req, res) => {
       ${textContent}
     `;
 
-    const response = await generateContentWithRetry('gemini-3.6-flash', prompt);
+    const response = await generateContentWithRetry('gemini-2-flash', prompt);
 
     let rawText = response.text.trim();
     // Clean up potential markdown formatting around JSON
