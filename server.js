@@ -94,6 +94,30 @@ app.post('/api/parse-knowledge', upload.single('file'), async (req, res) => {
   }
 });
 
+// Phase 9.2: Automated MS Teams Notification (Simulation)
+app.post('/api/notify/teams', async (req, res) => {
+  try {
+    const { tasks } = req.body;
+    
+    if (!tasks || tasks.length === 0) {
+      return res.status(200).json({ message: 'No urgent tasks to notify.' });
+    }
+
+    // In a real scenario, this would send an Adaptive Card to MS Teams Webhook URL
+    // e.g., fetch(process.env.TEAMS_WEBHOOK_URL, { method: 'POST', body: JSON.stringify(adaptiveCard) })
+    
+    console.log(`\n🔔 [MS Teams Notification Simulated]`);
+    console.log(`Sending alert for ${tasks.length} urgent task(s):`);
+    tasks.forEach(t => console.log(` - [${t.subject}] ${t.name} (Due: ${t.deadline})`));
+    console.log(`========================================\n`);
+
+    res.json({ success: true, message: 'แจ้งเตือนไปยัง MS Teams จำลองสำเร็จ!' });
+  } catch (error) {
+    console.error("Teams Notify Error:", error);
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดในการส่งแจ้งเตือน' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`AI Study Team Backend running at http://localhost:${port}`);
   console.log('อย่าลืมตั้งค่า GEMINI_API_KEY ในไฟล์ .env ด้วยนะครับ!');
