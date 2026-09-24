@@ -67,11 +67,18 @@ async function extractText(buffer, filename) {
   return '';
 }
 
-app.post('/api/parse-knowledge', upload.single('file'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
+app.post('/api/parse-knowledge', (req, res) => {
+  upload.single('file')(req, res, async (err) => {
+    if (err instanceof multer.MulterError) {
+      return res.status(400).json({ error: `File upload error: ${err.message}` });
+    } else if (err) {
+      return res.status(500).json({ error: `Unknown upload error: ${err.message}` });
     }
+
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
 
     let textContent = '';
     const isZip = req.file.mimetype === 'application/zip' || req.file.mimetype === 'application/x-zip-compressed' || req.file.originalname.endsWith('.zip');
@@ -150,6 +157,7 @@ app.post('/api/parse-knowledge', upload.single('file'), async (req, res) => {
     console.error("Parse Error:", error);
     res.status(500).json({ error: 'เกิดข้อผิดพลาดในการประมวลผลไฟล์' });
   }
+  });
 });
 
 // Phase 9.2: Automated MS Teams Notification (Actual Webhook)
