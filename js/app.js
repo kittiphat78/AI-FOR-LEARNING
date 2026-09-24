@@ -29,12 +29,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     initUI();
     bindEvents();
     renderApp();
-    
-    // Phase 9: Run proactive automation (delay slightly so UI finishes)
-    setTimeout(() => {
-      runProactiveAutomation();
-    }, 1000);
-    
   } catch (error) {
     console.error('Error initializing app:', error);
     showToast('ไม่สามารถโหลดข้อมูลเริ่มต้นได้', 'error');
@@ -445,10 +439,6 @@ function bindEvents() {
       e.target.classList.add('active');
       const tabId = e.target.getAttribute('data-tab');
       document.getElementById(`tab-${tabId}`).classList.add('active');
-      
-      if (tabId === 'linker') {
-        renderKnowledgeGraph(AppState.currentSubjectId);
-      }
     }
   });
 
@@ -724,54 +714,6 @@ function generateStudyPlanner() {
   showToast('จัดตารางเวลาอัตโนมัติสำเร็จ!', 'success');
 }
 
-function renderKnowledgeGraph(subjectId) {
-  const container = document.getElementById('subject-knowledge-graph');
-  if (!container) return;
-
-  const sub = AppState.subjectsMap.get(subjectId);
-  const knowledge = AppState.db.getWeeklyKnowledge().filter(k => k.subjectId === subjectId).sort((a,b) => a.week - b.week);
-
-  if (knowledge.length === 0) {
-    container.innerHTML = `<div class="empty-state">ยังไม่มีข้อมูลเนื้อหาเพื่อสร้าง Graph</div>`;
-    return;
-  }
-
-  // Draw a simple vertical tree graph
-  let graphHTML = `
-    <div class="graph-node-row">
-      <div class="graph-node root">${sub.icon} ${sub.shortName}</div>
-    </div>
-  `;
-
-  // Draw edges between root and first layer
-  graphHTML += `
-    <div class="graph-node-row" style="margin-top: -16px; min-height: 32px;">
-      <div class="graph-edge vertical" style="height: 48px; top: -16px;"></div>
-    </div>
-  `;
-
-  // Draw topics as a row or wrapped grid
-  const topicsHTML = knowledge.map(k => {
-    const mainTopic = k.topics.split('\n')[0].replace('หัวข้อที่ 1: ', '').substring(0, 30);
-    return `
-      <div class="graph-node" title="${k.topics}">
-        <div style="font-size: 11px; color: var(--text-tertiary); margin-bottom: 4px;">Week ${k.week}</div>
-        <div>${mainTopic}${mainTopic.length >= 30 ? '...' : ''}</div>
-      </div>
-    `;
-  }).join('');
-
-  graphHTML += `
-    <div class="graph-node-row">
-      <div class="graph-edge horizontal"></div>
-      ${knowledge.map(k => `<div class="graph-edge vertical" style="left: ${100 / (knowledge.length * 2) + (100 / knowledge.length) * knowledge.indexOf(k)}%;"></div>`).join('')}
-      ${topicsHTML}
-    </div>
-  `;
-
-  container.innerHTML = graphHTML;
-}
-
 function handleTutorChat() {
   const inputEl = document.getElementById('tutor-input');
   const msgContainer = document.getElementById('tutor-chat-messages');
@@ -802,31 +744,49 @@ function handleTutorChat() {
   `;
   msgContainer.scrollTop = msgContainer.scrollHeight;
 
-  setTimeout(() => {
+  // Call Backend API
+  fetch('http://localhost:3001/api/tutor', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      subject: AppState.subjectsMap.get(AppState.currentSubjectId)?.name || 'Unknown',
+      message: text
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
     const thinkEl = document.getElementById(thinkingId);
     if (thinkEl) thinkEl.remove();
 
-    let reply = "เรื่องนี้น่าสนใจมากครับ! ผมสรุปให้เข้าใจง่ายๆ แบบนี้นะครับ...<br><br>ถ้าอยากให้ผมอธิบายเจาะลึกส่วนไหน หรือยกตัวอย่างเพิ่มเติมบอกได้เลยครับ";
-    
-    if (text.toLowerCase().includes('normalization')) {
-      reply = `
-        <strong>Normalization</strong> คือการจัดระเบียบข้อมูลใน Database เพื่อลดความซ้ำซ้อนครับ (Data Redundancy)<br><br>
-        เปรียบเทียบง่ายๆ เหมือนการจัดตู้เสื้อผ้า:<br>
-        • <strong>1NF:</strong> เสื้อผ้าต้องไม่ซ้อนกันในไม้แขวนเดียว (แต่ละช่องต้องมีค่าเดียว)<br>
-        • <strong>2NF:</strong> เสื้อผ้าต้องแยกหมวดหมู่ (ขึ้นกับ Primary Key เต็มๆ)<br>
-        • <strong>3NF:</strong> ห้ามมีป้ายราคาที่บอกไซส์เสื้อไปพร้อมกัน (ห้ามมี Transitive Dependency)<br><br>
-        พอเห็นภาพไหมครับ? อยากลองทำโจทย์สักข้อไหม?
-      `;
-    }
+    // Format markdown to basic HTML for chat
+    let replyText = data.reply || "เกิดข้อผิดพลาดในการรับข้อมูล";
+    replyText = replyText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    replyText = replyText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    replyText = replyText.replace(/\n/g, '<br>');
 
     msgContainer.innerHTML += `
       <div class="tutor-message bot">
         <div class="tutor-message-avatar">🎓</div>
-        <div class="tutor-message-bubble">${reply}</div>
+        <div class="tutor-message-bubble" style="line-height: 1.6;">${replyText}</div>
       </div>
     `;
     msgContainer.scrollTop = msgContainer.scrollHeight;
-  }, 2000);
+  })
+  .catch(err => {
+    console.error(err);
+    const thinkEl = document.getElementById(thinkingId);
+    if (thinkEl) thinkEl.remove();
+
+    msgContainer.innerHTML += `
+      <div class="tutor-message bot">
+        <div class="tutor-message-avatar">⚠️</div>
+        <div class="tutor-message-bubble" style="color: var(--danger);">
+          ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ AI ได้ โปรดตรวจสอบว่ารัน backend (node server.js) และใส่ GEMINI_API_KEY แล้ว
+        </div>
+      </div>
+    `;
+    msgContainer.scrollTop = msgContainer.scrollHeight;
+  });
 }
 
 function saveWeeklyKnowledge() {
@@ -1014,30 +974,6 @@ function updateTaskBadge() {
     badge.style.display = 'block';
   } else {
     badge.style.display = 'none';
-  }
-}
-
-function runProactiveAutomation() {
-  // Simulate Phase 9: Proactive Assistant checking on page load
-  const urgentTasks = getUrgentTasks();
-  
-  // Only show if there's something urgent and hasn't been shown recently (simplification: always show for demo if urgent > 0)
-  if (urgentTasks.length > 0) {
-    setTimeout(() => {
-      const proContent = document.getElementById('proactive-content');
-      if (proContent) {
-        proContent.innerHTML = urgentTasks.map(t => {
-          const sub = AppState.subjectsMap.get(t.subjectId);
-          return `
-            <div style="background: var(--danger-bg); border-left: 3px solid var(--danger); padding: 12px; border-radius: 4px;">
-              <div style="font-weight: 600; font-size: 14px; color: var(--danger); margin-bottom: 4px;">⚠️ ${t.name}</div>
-              <div style="font-size: 12px; color: var(--text-secondary);">${sub.icon} ${sub.shortName} • Deadline: ${t.deadline}</div>
-            </div>
-          `;
-        }).join('');
-        document.getElementById('modal-proactive').classList.add('active');
-      }
-    }, 1500); // Wait 1.5 seconds after load
   }
 }
 
