@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
+const pdfParse = require('pdf-parse');
 const AdmZip = require('adm-zip');
 const { parseOffice } = require('officeparser');
 const path = require('path');
@@ -56,7 +57,10 @@ async function extractText(buffer, filename) {
   if (ext === 'jpeg' || ext === 'jpg' || ext === 'png') return '';
   
   try {
-    if (['pdf', 'docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls', 'odt', 'odp', 'ods'].includes(ext)) {
+    if (ext === 'pdf') {
+      const data = await pdfParse(buffer);
+      return data.text;
+    } else if (['docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls', 'odt', 'odp', 'ods'].includes(ext)) {
       // officeparser parses these formats
       const data = await parseOffice(buffer, { fileType: ext });
       const txt = await data.to('txt');
